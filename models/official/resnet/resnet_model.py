@@ -132,6 +132,7 @@ def conv2d_fixed_padding(inputs,
     kernel_size = [kernel_size, kernel_size, in_channels, filters]
     kernel = tf.get_variable(
         "kernel", kernel_size, initializer=tf.variance_scaling_initializer())
+    strides = [strides, strides]
 
     return tf.nn.conv2d(
         inputs,
