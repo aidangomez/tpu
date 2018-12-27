@@ -23,10 +23,14 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from absl import flags
+
 import tensorflow as tf
 
 BATCH_NORM_DECAY = 0.9
 BATCH_NORM_EPSILON = 1e-5
+
+FLAGS = flags.FLAGS
 
 
 def batch_norm_relu(inputs,
@@ -102,11 +106,61 @@ def fixed_padding(inputs, kernel_size, data_format='channels_first'):
   return padded_inputs
 
 
+def targeted_dropout(inputs, targ_rate, keep_prob, is_training):
+
+  def weight_targeting(w, t=targ_rate):
+    """Weight-level magnitude pruning."""
+    w_shape = w.shape
+    size = tf.to_int32(tf.reduce_prod(w_shape[:-1]))
+    w = tf.reshape(w, [-1, w_shape[-1]])
+
+    k = tf.to_int32(tf.shape(w)[0] * t)
+
+    norm = tf.abs(w)
+    transpose_norm = tf.transpose(norm)
+    thres = tf.contrib.framework.sort(tf.abs(transpose_norm), axis=1)[:, k]
+    mask = tf.to_float(thres[None, :] >= norm)
+
+    return tf.reshape(mask, w_shape)
+
+  def unit_targeting(w, t=targ_rate):
+    """Unit-level magnitude pruning."""
+    k = tf.to_int32(k)
+    w_shape = shape_list(w)
+    size = tf.to_int32(tf.reduce_prod(w_shape[:-1]))
+    w = tf.reshape(w, [size, w_shape[-1]])
+
+    k = tf.to_int32(tf.shape(w)[1] * t)
+
+    norm = tf.norm(w, axis=0)
+    thres = tf.contrib.framework.sort(norm, axis=0)[k]
+    mask = tf.to_float(thres >= norm)[None, :]
+    mask = tf.tile(mask, [size, 1])
+
+    return tf.reshape(mask, w_shape)
+
+  if FLAGS.td == "weight":
+    mask = weight_targeting(inputs)
+  elif FLAGS.td == "unit":
+    mask = unit_targeting(inputs)
+  else:
+    raise Exception("%s" % FLAGS.td)
+
+  mask = tf.cast(mask, inputs.dtype)
+
+  if is_training:
+    return inputs * (1 - mask) + tf.nn.dropout(inputs, keep_prob) * mask
+  else:
+    return inputs
+
+
 def conv2d_fixed_padding(inputs,
                          filters,
                          kernel_size,
                          strides,
-                         data_format='channels_first'):
+                         data_format='channels_first',
+                         use_td=True,
+                         is_training=False):
   """Strided 2-D convolution with explicit padding.
 
   The padding is consistent and is based only on `kernel_size`, not on the
@@ -139,6 +193,10 @@ def conv2d_fixed_padding(inputs,
     strides = ([1, strides, strides, 1]
                if data_format == 'channels_last' else [1, 1, strides, strides])
     data_format = 'NHWC' if data_format == 'channels_last' else "NCHW"
+
+    if FLAGS.td is not None:
+      kernel = targeted_dropout(kernel, FLAGS.targ_rate, FLAGS.keep_prob,
+                                is_training)
 
     return tf.nn.conv2d(
         inputs, kernel, strides, padding=padding, data_format=data_format)
@@ -177,7 +235,8 @@ def residual_block(inputs,
         filters=filters,
         kernel_size=1,
         strides=strides,
-        data_format=data_format)
+        data_format=data_format,
+        is_training=is_training)
     shortcut = batch_norm_relu(
         shortcut, is_training, relu=False, data_format=data_format)
 
@@ -186,7 +245,8 @@ def residual_block(inputs,
       filters=filters,
       kernel_size=3,
       strides=strides,
-      data_format=data_format)
+      data_format=data_format,
+      is_training=is_training)
   inputs = batch_norm_relu(inputs, is_training, data_format=data_format)
 
   inputs = conv2d_fixed_padding(
@@ -194,7 +254,8 @@ def residual_block(inputs,
       filters=filters,
       kernel_size=3,
       strides=1,
-      data_format=data_format)
+      data_format=data_format,
+      is_training=is_training)
   inputs = batch_norm_relu(
       inputs, is_training, relu=False, init_zero=True, data_format=data_format)
 
@@ -236,7 +297,8 @@ def bottleneck_block(inputs,
         filters=filters_out,
         kernel_size=1,
         strides=strides,
-        data_format=data_format)
+        data_format=data_format,
+        is_training=is_training)
     shortcut = batch_norm_relu(
         shortcut, is_training, relu=False, data_format=data_format)
 
@@ -245,7 +307,8 @@ def bottleneck_block(inputs,
       filters=filters,
       kernel_size=1,
       strides=1,
-      data_format=data_format)
+      data_format=data_format,
+      is_training=is_training)
   inputs = batch_norm_relu(inputs, is_training, data_format=data_format)
 
   inputs = conv2d_fixed_padding(
@@ -253,7 +316,8 @@ def bottleneck_block(inputs,
       filters=filters,
       kernel_size=3,
       strides=strides,
-      data_format=data_format)
+      data_format=data_format,
+      is_training=is_training)
   inputs = batch_norm_relu(inputs, is_training, data_format=data_format)
 
   inputs = conv2d_fixed_padding(
@@ -261,7 +325,8 @@ def bottleneck_block(inputs,
       filters=4 * filters,
       kernel_size=1,
       strides=1,
-      data_format=data_format)
+      data_format=data_format,
+      is_training=is_training)
   inputs = batch_norm_relu(
       inputs, is_training, relu=False, init_zero=True, data_format=data_format)
 
@@ -336,7 +401,8 @@ def resnet_v1_generator(block_fn,
         filters=64,
         kernel_size=7,
         strides=2,
-        data_format=data_format)
+        data_format=data_format,
+        use_td=False)
     inputs = tf.identity(inputs, 'initial_conv')
     inputs = batch_norm_relu(inputs, is_training, data_format=data_format)
 
