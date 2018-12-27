@@ -127,6 +127,7 @@ def conv2d_fixed_padding(inputs,
     if strides > 1:
       inputs = fixed_padding(inputs, kernel_size, data_format=data_format)
 
+    padding = 'SAME' if strides == 1 else 'VALID'
     channel_idx = -1 if data_format == 'channels_last' else 1
     in_channels = inputs.shape.as_list()[channel_idx]
     kernel_size = [kernel_size, kernel_size, in_channels, filters]
@@ -140,11 +141,7 @@ def conv2d_fixed_padding(inputs,
     data_format = 'NHWC' if data_format == 'channels_last' else "NCHW"
 
     return tf.nn.conv2d(
-        inputs,
-        kernel,
-        strides,
-        padding=('SAME' if strides == 1 else 'VALID'),
-        data_format=data_format)
+        inputs, kernel, strides, padding=padding, data_format=data_format)
 
 
 def residual_block(inputs,
