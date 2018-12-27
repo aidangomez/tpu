@@ -135,7 +135,8 @@ def conv2d_fixed_padding(inputs,
         kernel_size,
         dtype=inputs.dtype,
         initializer=tf.variance_scaling_initializer())
-    strides = [strides, strides]
+    strides = ([1, strides, strides, 1]
+               if data_format == 'channels_last' else [1, 1, strides, strides])
     data_format = 'NHWC' if data_format == 'channels_last' else "NCHW"
 
     return tf.nn.conv2d(
