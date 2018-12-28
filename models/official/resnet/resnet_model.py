@@ -195,7 +195,7 @@ def conv2d_fixed_padding(inputs,
     data_format = 'NHWC' if data_format == 'channels_last' else "NCHW"
 
     if FLAGS.td is not None:
-      kernel = targeted_dropout(kernel, FLAGS.targ_rate, FLAGS.keep_prob,
+      kernel = targeted_dropout(kernel, FLAGS.targ_rate, 1 - FLAGS.drop_prob,
                                 is_training)
 
     return tf.nn.conv2d(
