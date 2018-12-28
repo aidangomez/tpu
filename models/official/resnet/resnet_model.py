@@ -114,7 +114,7 @@ def targeted_dropout(inputs, targ_rate, keep_prob, is_training):
     size = tf.to_int32(tf.reduce_prod(w_shape[:-1]))
     w = tf.reshape(w, [-1, w_shape[-1]])
 
-    k = tf.to_int32(tf.shape(w)[0] * t)
+    k = tf.to_int32(tf.shape(w, out_type=tf.float32)[0] * t)
 
     norm = tf.abs(w)
     transpose_norm = tf.transpose(norm)
