@@ -125,11 +125,11 @@ def targeted_dropout(inputs, targ_rate, keep_prob, is_training):
 
   def unit_targeting(w, t=targ_rate):
     """Unit-level magnitude pruning."""
-    w_shape = shape_list(w)
+    w_shape = w.shape
     size = tf.to_int32(tf.reduce_prod(w_shape[:-1]))
     w = tf.reshape(w, [size, w_shape[-1]])
 
-    k = tf.to_int32(tf.shape(w)[1] * t)
+    k = tf.to_int32(tf.shape(w, out_type=tf.float32)[1] * t)
 
     norm = tf.norm(w, axis=0)
     thres = tf.contrib.framework.sort(norm, axis=0)[k]
