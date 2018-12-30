@@ -73,6 +73,14 @@ def main(unused_argv):
   tf.logging.info('Precision: %s', FLAGS.precision)
   use_bfloat16 = FLAGS.precision == 'bfloat16'
 
+  resnet_classifier = tf.contrib.tpu.TPUEstimator(
+      use_tpu=FLAGS.use_tpu,
+      model_fn=resnet_main.resnet_model_fn,
+      config=config,
+      train_batch_size=FLAGS.train_batch_size,
+      eval_batch_size=FLAGS.eval_batch_size,
+      export_to_tpu=FLAGS.export_to_tpu)
+
   tf.logging.info('Using dataset: %s', FLAGS.data_dir)
   imagenet_train, imagenet_eval = [
       imagenet_input.ImageNetInput(
@@ -93,14 +101,6 @@ def main(unused_argv):
     FLAGS.do_prune = True
     FLAGS.drop_prob = 1.0
     FLAGS.targ_rate = p
-
-    resnet_classifier = tf.contrib.tpu.TPUEstimator(
-        use_tpu=FLAGS.use_tpu,
-        model_fn=resnet_main.resnet_model_fn,
-        config=config,
-        train_batch_size=FLAGS.train_batch_size,
-        eval_batch_size=FLAGS.eval_batch_size,
-        export_to_tpu=FLAGS.export_to_tpu)
 
     start_timestamp = time.time()  # This time will include compilation time
     eval_results = resnet_classifier.evaluate(
