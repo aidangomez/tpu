@@ -41,11 +41,6 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_string('prune_percs', default=None, help="")
 
-# The input tensor is in the range of [0, 255], we need to scale them to the
-# range of [0, 1]
-MEAN_RGB = [0.485 * 255, 0.456 * 255, 0.406 * 255]
-STDDEV_RGB = [0.229 * 255, 0.224 * 255, 0.225 * 255]
-
 
 def main(unused_argv):
   tpu_cluster_resolver = tf.contrib.cluster_resolver.TPUClusterResolver(
@@ -72,13 +67,6 @@ def main(unused_argv):
           per_host_input_for_training=tf.contrib.tpu.InputPipelineConfig.
           PER_HOST_V2))  # pylint: disable=line-too-long
 
-  resnet_classifier = tf.contrib.tpu.TPUEstimator(
-      use_tpu=FLAGS.use_tpu,
-      model_fn=resnet_main.resnet_model_fn,
-      config=config,
-      train_batch_size=FLAGS.train_batch_size,
-      eval_batch_size=FLAGS.eval_batch_size,
-      export_to_tpu=FLAGS.export_to_tpu)
   assert FLAGS.precision == 'bfloat16' or FLAGS.precision == 'float32', (
       'Invalid value for --precision flag; must be bfloat16 or float32.')
   tf.logging.info('Precision: %s', FLAGS.precision)
@@ -99,17 +87,18 @@ def main(unused_argv):
   steps_per_epoch = FLAGS.num_train_images // FLAGS.train_batch_size
   eval_steps = FLAGS.num_eval_images // FLAGS.eval_batch_size
 
-  start_timestamp = time.time()  # This time will include compilation time
-  eval_results = resnet_classifier.evaluate(
-      input_fn=imagenet_eval.input_fn, steps=eval_steps)
-  elapsed_time = int(time.time() - start_timestamp)
-  tf.logging.info('0%% Prune -- Eval results: %s. Elapsed seconds: %d',
-                  eval_results, elapsed_time)
-
   prune_percents = [float(p) for p in FLAGS.prune_percs.split(',')]
   for p in prune_percents:
     FLAGS.drop_prob = 1.0
     FLAGS.targ_rate = p
+
+    resnet_classifier = tf.contrib.tpu.TPUEstimator(
+        use_tpu=FLAGS.use_tpu,
+        model_fn=resnet_main.resnet_model_fn,
+        config=config,
+        train_batch_size=FLAGS.train_batch_size,
+        eval_batch_size=FLAGS.eval_batch_size,
+        export_to_tpu=FLAGS.export_to_tpu)
 
     start_timestamp = time.time()  # This time will include compilation time
     eval_results = resnet_classifier.evaluate(
