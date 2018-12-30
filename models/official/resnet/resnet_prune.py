@@ -40,6 +40,7 @@ from tensorflow.python.estimator import estimator
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string('prune_percs', default=None, help="")
+flags.DEFINE_boolean('do_prune', default=False, help="")
 
 
 def main(unused_argv):
@@ -89,6 +90,7 @@ def main(unused_argv):
 
   prune_percents = [float(p) for p in FLAGS.prune_percs.split(',')]
   for p in prune_percents:
+    FLAGS.do_prune = True
     FLAGS.drop_prob = 1.0
     FLAGS.targ_rate = p
 
