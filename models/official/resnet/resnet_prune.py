@@ -39,7 +39,7 @@ from tensorflow.python.estimator import estimator
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_string('prune_percs', default=None)
+flags.DEFINE_string('prune_percs', default=None, help="")
 
 # The input tensor is in the range of [0, 255], we need to scale them to the
 # range of [0, 1]
