@@ -107,6 +107,7 @@ def fixed_padding(inputs, kernel_size, data_format='channels_first'):
 
 
 def targeted_dropout(inputs, targ_rate, keep_prob, is_training):
+  print(targ_rate, keep_prob)
 
   def weight_targeting(w, t=targ_rate):
     """Weight-level magnitude pruning."""
