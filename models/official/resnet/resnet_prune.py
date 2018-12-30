@@ -113,9 +113,7 @@ def main(unused_argv):
 
     start_timestamp = time.time()  # This time will include compilation time
     eval_results = resnet_classifier.evaluate(
-        input_fn=imagenet_eval.input_fn,
-        steps=eval_steps,
-        checkpoint_path=ckpt)
+        input_fn=imagenet_eval.input_fn, steps=eval_steps)
     elapsed_time = int(time.time() - start_timestamp)
     tf.logging.info('%f%% Prune -- Eval results: %s. Elapsed seconds: %d',
                     p * 100, eval_results, elapsed_time)
