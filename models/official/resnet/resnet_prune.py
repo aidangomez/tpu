@@ -106,31 +106,10 @@ def main(unused_argv):
   tf.logging.info('0%% Prune -- Eval results: %s. Elapsed seconds: %d',
                   eval_results, elapsed_time)
 
-  # features, labels = imagenet_eval.input_fn()
-  # sess = tf.Session()
-  # tf.train.get_or_create_global_step()
-
-  # resnet_main.resnet_model_fn(features, labels, tf.estimator.ModeKeys.EVAL, {})
-  # saver = tf.train.Saver()
-  # ckpt_dir = tf.train.latest_checkpoint(FLAGS.model_dir)
-  # print("Loading model from...", ckpt_dir)
-  # saver.restore(sess, ckpt_dir)
-
-  # def collect_weights():
-  #   outp = {}
-  #   for name in resnet_classifier.get_variable_names():
-  #     print(name, tf.trainable_variables())
-  #     tv = tf.contrib.framework.get_unique_variable(name)
-  #     nv = resnet_classifier.get_variable_value(name)
-  #     outp[name] = (tv, nv)
-  #   return outp
-
-  # weights = collect_weights()
-
   prune_percents = [float(p) for p in FLAGS.prune_percs.split(',')]
   for p in prune_percents:
     FLAGS.drop_prob = 1.0
-    FLAGS.targ_rate = pp
+    FLAGS.targ_rate = p
 
     start_timestamp = time.time()  # This time will include compilation time
     eval_results = resnet_classifier.evaluate(
