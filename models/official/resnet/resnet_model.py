@@ -397,13 +397,14 @@ def resnet_v1_generator(block_fn,
 
   def model(inputs, is_training):
     """Creation of the model graph."""
-    inputs = conv2d_fixed_padding(
-        inputs=inputs,
-        filters=64,
-        kernel_size=7,
-        strides=2,
-        data_format=data_format,
-        use_td=False)
+    with tf.variable_scope("no_l1"):
+      inputs = conv2d_fixed_padding(
+          inputs=inputs,
+          filters=64,
+          kernel_size=7,
+          strides=2,
+          data_format=data_format,
+          use_td=False)
     inputs = tf.identity(inputs, 'initial_conv')
     inputs = batch_norm_relu(inputs, is_training, data_format=data_format)
 
@@ -464,10 +465,11 @@ def resnet_v1_generator(block_fn,
     inputs = tf.identity(inputs, 'final_avg_pool')
     inputs = tf.reshape(inputs,
                         [-1, 2048 if block_fn is bottleneck_block else 512])
-    inputs = tf.layers.dense(
-        inputs=inputs,
-        units=num_classes,
-        kernel_initializer=tf.random_normal_initializer(stddev=.01))
+    with tf.variable_scope("no_l1"):
+      inputs = tf.layers.dense(
+          inputs=inputs,
+          units=num_classes,
+          kernel_initializer=tf.random_normal_initializer(stddev=.01))
     inputs = tf.identity(inputs, 'final_dense')
     return inputs
 

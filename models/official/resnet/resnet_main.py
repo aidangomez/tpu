@@ -1,4 +1,4 @@
-# Copyright 2018 The TensorFlow Authors. All Rights Reserved.
+d  # Copyright 2018 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -51,6 +51,7 @@ flags.DEFINE_bool(
     help=('Use TPU to execute the model for training and evaluation. If'
           ' --use_tpu=false, will use whatever devices are available to'
           ' TensorFlow by default (e.g. CPU and GPU)'))
+flags.DEFINE_float('l1', default=0.0, help=('L1 loss'))
 
 # Cloud TPU Cluster Resolvers
 flags.DEFINE_string(
@@ -374,6 +375,12 @@ def resnet_model_fn(features, labels, mode, params):
       for v in tf.trainable_variables()
       if 'batch_normalization' not in v.name
   ])
+  if FLAGS.l1 != 0.0:
+    loss += FLAGS.l1 * tf.add_n([
+        tf.reduce_sum(tf.abs(v))
+        for v in tf.trainable_variables()
+        if 'batch_normalization' not in v.name and 'no_l1' not in v.name
+    ])
 
   host_call = None
   if mode == tf.estimator.ModeKeys.TRAIN:
