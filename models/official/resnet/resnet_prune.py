@@ -40,7 +40,6 @@ from tensorflow.python.estimator import estimator
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string('prune_percs', default=None, help="")
-flags.DEFINE_boolean('do_prune', default=False, help="")
 
 
 def main(unused_argv):

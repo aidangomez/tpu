@@ -44,6 +44,7 @@ flags.DEFINE_string(
     'td', default=None, help='Activates TD. one of "weight" or "unit"')
 flags.DEFINE_float('drop_prob', default=0.0, help='TD drop probability')
 flags.DEFINE_float('targ_rate', default=0.0, help='TD targetting rate')
+flags.DEFINE_boolean('do_prune', default=False, help="")
 
 flags.DEFINE_bool(
     'use_tpu',
