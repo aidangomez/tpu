@@ -149,7 +149,8 @@ def targeted_dropout(inputs, targ_rate, keep_prob, is_training):
 
   if is_training:
     return inputs * (1 - mask) + tf.where(
-        tf.random_normal(w.shape) > drop_rate, w, tf.zeros_like(w)) * mask
+        tf.random_normal(inputs.shape) > drop_rate, inputs,
+        tf.zeros_like(inputs)) * mask
   elif FLAGS.do_prune:
     return inputs * (1 - mask)
   else:
