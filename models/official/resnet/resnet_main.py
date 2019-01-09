@@ -53,6 +53,7 @@ flags.DEFINE_bool(
           ' --use_tpu=false, will use whatever devices are available to'
           ' TensorFlow by default (e.g. CPU and GPU)'))
 flags.DEFINE_float('l1', default=0.0, help=('L1 loss'))
+flags.DEFINE_string('l1_v', default="weight", help=('L1 loss_version'))
 
 # Cloud TPU Cluster Resolvers
 flags.DEFINE_string(
@@ -377,11 +378,19 @@ def resnet_model_fn(features, labels, mode, params):
       if 'batch_normalization' not in v.name
   ])
   if FLAGS.l1 != 0.0:
-    loss += FLAGS.l1 * tf.add_n([
-        tf.reduce_sum(tf.abs(v))
-        for v in tf.trainable_variables()
-        if 'batch_normalization' not in v.name and 'no_l1' not in v.name
-    ])
+    if FLAGS.l1_v == "weight":
+      loss += FLAGS.l1 * tf.add_n([
+          tf.reduce_sum(tf.abs(v))
+          for v in tf.trainable_variables()
+          if 'batch_normalization' not in v.name and 'no_l1' not in v.name
+      ])
+    elif FLAGS.l1_v == "unit":
+      loss += FLAGS.l1 * tf.add_n([
+          tf.reduce_sum(
+              tf.reduce_mean(tf.abs(v), list(range(len(v.shape) - 1))))
+          for v in tf.trainable_variables()
+          if 'batch_normalization' not in v.name and 'no_l1' not in v.name
+      ])
 
   host_call = None
   if mode == tf.estimator.ModeKeys.TRAIN:
